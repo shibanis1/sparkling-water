@@ -11,8 +11,9 @@ import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
 import water.fvec.H2OFrame
-import water.sparkling.itest.{LocalTest, IntegTestHelper}
 import water.support.SparkContextSupport
+import water.sparkling.itest.{IntegTestStopper, LocalTest, IntegTestHelper}
+
 
 /**
   * PUBDEV-928 test suite.
@@ -33,9 +34,9 @@ class PubDev928Suite extends FunSuite with IntegTestHelper {
   }
 }
 
-object PubDev928Test extends SparkContextSupport {
+object PubDev928Test extends SparkContextSupport with IntegTestStopper {
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit = exitOnException{
     val conf = configure("PUBDEV-928")
     val sc = new SparkContext(conf)
     val h2oContext = H2OContext.getOrCreate(sc)
@@ -57,7 +58,7 @@ object PubDev928Test extends SparkContextSupport {
     val queryResult = sqlContext.sql(query)
     val partitionNumbers = queryResult.count().asInstanceOf[Int] + 1
     val result: H2OFrame = h2oContext.asH2OFrame(queryResult.repartition(partitionNumbers), "flightTable")
-    println("Number of partitions in query result: " + queryResult.rdd.partitions.size)
+    println("Number of partitions in query result: " + queryResult.rdd.partitions.length)
     println("Number of chunks in query result" + result.anyVec().nChunks())
 
     val train: H2OFrame = result('Year, 'Month, 'DayofMonth, 'DayOfWeek, 'CRSDepTime, 'CRSArrTime,
