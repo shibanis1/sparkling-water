@@ -16,11 +16,14 @@
  */
 package org.apache.spark.ml.spark.models.svm
 
-import hex.{Model, ModelMetricsBinomial}
+import breeze.stats.distributions.Binomial
+import hex.ModelMetricsSupervised.MetricBuilderSupervised
+import hex.{Model, ModelCategory, ModelMetricsBinomial, ModelMetricsRegression}
+import org.dmg.pmml.Regression
 import water.codegen.CodeGeneratorPipeline
 import water.fvec.Frame
 import water.util.{JCodeGen, SBPrintStream}
-import water.{Key, Keyed}
+import water.{H2O, Key, Keyed}
 
 object SVMModel {
 
@@ -61,8 +64,15 @@ class SVMModel private[svm](val selfKey: Key[_ <: Keyed[_ <: Keyed[_ <: AnyRef]]
                               val output: SVMModel.SVMOutput)
   extends Model[SVMModel, SVMModel.SVMParameters, SVMModel.SVMOutput](selfKey, parms, output) {
 
-  override def makeMetricBuilder(domain: Array[String]) =
-    new ModelMetricsBinomial.MetricBuilderBinomial(domain)
+  override def makeMetricBuilder(domain: Array[String]): MetricBuilderSupervised[Nothing] =
+    _output.getModelCategory match {
+      case ModelCategory.Binomial =>
+        new ModelMetricsBinomial.MetricBuilderBinomial(domain)
+      case ModelCategory.Regression =>
+        new ModelMetricsRegression.MetricBuilderRegression
+      case _ =>
+        throw H2O.unimpl
+    }
 
   protected def score0(data: Array[Double], preds: Array[Double]): Array[Double] = {
     java.util.Arrays.fill(preds, 0)
