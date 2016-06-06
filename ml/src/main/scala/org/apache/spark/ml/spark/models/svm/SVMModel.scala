@@ -18,7 +18,7 @@ package org.apache.spark.ml.spark.models.svm
 
 import breeze.stats.distributions.Binomial
 import hex.ModelMetricsSupervised.MetricBuilderSupervised
-import hex.{Model, ModelCategory, ModelMetricsBinomial, ModelMetricsRegression}
+import hex._
 import org.dmg.pmml.Regression
 import water.codegen.CodeGeneratorPipeline
 import water.fvec.Frame
@@ -76,13 +76,21 @@ class SVMModel private[svm](val selfKey: Key[_ <: Keyed[_ <: Keyed[_ <: AnyRef]]
 
   protected def score0(data: Array[Double], preds: Array[Double]): Array[Double] = {
     java.util.Arrays.fill(preds, 0)
-    preds(0) = _output.interceptor
-    val threshold: Double = _parms._threshold
-    preds(0) += data.zip(_output.weights).foldRight(0.0){ case ((d, w), acc) => d * w + acc}
-    preds(0) =
-      if (threshold.isNaN) preds(0)
-      else if (preds(0) > threshold) 1
-      else 0
+    val pred =
+      data.zip(_output.weights).foldRight(_output.interceptor){ case ((d, w), acc) => d * w + acc}
+
+    if(_parms._threshold.isNaN) { // Regression
+      preds(0) = pred
+    } else { // Binomial
+      // TODO not 100% sure what should be returned here for the ROC curve to work in FlowUI
+      if(pred > _parms._threshold) {
+        preds(2) = 1
+        preds(1) = 0
+      } else {
+        preds(2) = 0
+        preds(1) = 1
+      }
+    }
     preds
   }
 
@@ -98,12 +106,23 @@ class SVMModel private[svm](val selfKey: Key[_ <: Keyed[_ <: Keyed[_ <: AnyRef]]
                                            fileCtx: CodeGeneratorPipeline,
                                            verboseCode: Boolean) {
     bodySb.i.p("java.util.Arrays.fill(preds,0);").nl
-    bodySb.i.p(s"preds[0] = ${_output.interceptor};").nl
-    bodySb.i.p(s"final double threshold = ${_parms._threshold};").nl
+    bodySb.i.p(s"double prediction = ${_output.interceptor};").nl
     bodySb.i.p("for(int i = 0; i < data.length; i++) {").nl
-    bodySb.i(1).p("preds[0] += (data[i] * WEIGHTS[i]);").nl
+    bodySb.i(1).p("prediction += (data[i] * WEIGHTS[i]);").nl
     bodySb.i.p("}").nl
-    bodySb.i.p("preds[0] = Double.isNaN(threshold) ? preds[0] : (preds[0] > threshold ? 1 : 0);").nl
+
+    if (_output.nclasses == 1) {
+      bodySb.i.p("preds[0] = prediction;").nl
+    } else {
+      bodySb.i.p(s"if(prediction > ${_parms._threshold}) {").nl
+      bodySb.i(1).p("preds[2] = 1;").nl
+      bodySb.i(1).p("preds[1] = 0;").nl
+      bodySb.i.p(s"} else {").nl
+      bodySb.i(1).p("preds[2] = 0;").nl
+      bodySb.i(1).p("preds[1] = 1;").nl
+      bodySb.i.p(s"}").nl
+    }
+
   }
 
 }
