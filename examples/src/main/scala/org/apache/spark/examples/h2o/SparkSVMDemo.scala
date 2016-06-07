@@ -16,8 +16,13 @@
 */
 package org.apache.spark.examples.h2o
 
-import org.apache.spark.SparkContext
+import java.io.File
+
+import org.apache.spark.{SparkContext, SparkFiles}
 import org.apache.spark.h2o.H2OContext
+import org.apache.spark.ml.spark.models.svm.SVM
+import org.apache.spark.ml.spark.models.svm.SVMModel.SVMParameters
+import water.fvec.H2OFrame
 import water.support.SparkContextSupport
 
 object SparkSVMDemo extends SparkContextSupport {
@@ -27,6 +32,40 @@ object SparkSVMDemo extends SparkContextSupport {
     val sc = new SparkContext(conf)
 
     val h2oContext = new H2OContext(sc).start()
+
+    import h2oContext.implicits._
+    // Setup environment
+    addFiles(sc, absPath("examples/smalldata/bcwd.csv"))
+
+    // Load H2O from CSV file (i.e., access directly H2O cloud)
+    // Use super-fast advanced H2O CSV parser !!!
+    val breastCancerData = new H2OFrame(new File(SparkFiles.get("bcwd.csv")))
+
+    // Training data
+    breastCancerData.replace(breastCancerData.numCols()-1, breastCancerData.lastVec().toCategoricalVec)
+    breastCancerData.update()
+
+    // Configure Deep Learning algorithm
+    val parms = new SVMParameters
+    parms._train = breastCancerData
+    parms._response_column = 'label
+
+    val svm = new SVM(parms)
+
+    val svmModel = svm.trainModel.get
+
+    // Use model for scoring
+//    val predictionH2OFrame = svmModel.score(breastCancerData)('prediction)
+//    val predictionsFromModel = asRDD[DoubleHolder](predictionH2OFrame).collect.map ( _.result.getOrElse("NaN") )
+//    println(predictionsFromModel.mkString("\n===> Model predictions: ", ", ", ", ...\n"))
+
+    // Stop Spark cluster and destroy all executors
+    if (System.getProperty("spark.ext.h2o.preserve.executors")==null) {
+      sc.stop()
+    }
+    // Shutdown H2O
+    h2oContext.stop()
+
 
   }
 

@@ -16,10 +16,8 @@
  */
 package org.apache.spark.ml.spark.models.svm
 
-import breeze.stats.distributions.Binomial
 import hex.ModelMetricsSupervised.MetricBuilderSupervised
 import hex._
-import org.dmg.pmml.Regression
 import water.codegen.CodeGeneratorPipeline
 import water.fvec.Frame
 import water.util.{JCodeGen, SBPrintStream}
