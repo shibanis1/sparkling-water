@@ -47,16 +47,13 @@ import java.util.Arrays;
  * */
 public class SVM extends ModelBuilder<SVMModel, SVMParameters, SVMOutput> {
 
-    transient private SparkContext sc = H2OContext.getSparkContext();
-    transient private H2OContext h2oContext = H2OContext.getOrCreate(sc);
-    transient private SQLContext sqlContext = SQLContext.getOrCreate(sc);
-
     public SVM(boolean startup_once) {
         super(new SVMModel.SVMParameters(), startup_once);
     }
 
     public SVM(SVMParameters parms) {
         super(parms);
+        init(false);
     }
 
     @Override
@@ -111,6 +108,10 @@ public class SVM extends ModelBuilder<SVMModel, SVMParameters, SVMOutput> {
     }
 
     private final class SVMDriver extends Driver {
+
+        transient private SparkContext sc = H2OContext.getSparkContext();
+        transient private H2OContext h2oContext = H2OContext.getOrCreate(sc);
+        transient private SQLContext sqlContext = SQLContext.getOrCreate(sc);
 
         @Override
         public void compute2() {

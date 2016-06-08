@@ -3,7 +3,7 @@
   "cells": [
     {
       "type": "sca",
-      "input": "import org.apache.spark.mllib.linalg.Vectors\nimport scala.util.Random\nval df = sc.parallelize(1 to 50).map(v => {\n  val values = Array.fill(5){0}.map(x => Random.nextDouble())\n  // Use this for regression instead of binomial. Threshold has to be set to NaN during model building\n  //val label = Math.round(Random.nextDouble())\n  var label = if(Math.round(Random.nextDouble()) > 0.5) \"Y\" else \"N\"\n  (label, Vectors.dense(values))\n  }).toDF(\"Label\", \"Vector\")\n\nval hc = H2OContext.getOrCreate(sc)\nhc.asH2OFrame(df, \"bubbles\")\nval weightsDF = sc.parallelize(Array(Tuple1(Vectors.dense(1,1,1,1,1)))).toDF(\"Vector\")\nhc.asH2OFrame(weightsDF, \"weights\")"
+      "input": "import org.apache.spark.mllib.linalg.Vectors\nimport scala.util.Random\nval df = sc.parallelize(1 to 50).map(v => {\n  val values = Array.fill(5){0}.map(x => Random.nextDouble())\n  // Use this for regression instead of binomial. Threshold has to be set to NaN during model building\n  //val label = Math.round(Random.nextDouble())\n  val label = if(Math.round(Random.nextDouble()) > 0.5) \"Y\" else \"N\"\n  (label, Vectors.dense(values))\n  }).toDF(\"Label\", \"Vector\")\n\nval hc = H2OContext.getOrCreate(sc)\nhc.asH2OFrame(df, \"bubbles\")\nval weightsDF = sc.parallelize(Array(Tuple1(Vectors.dense(1,1,1,1,1)))).toDF(\"Vector\")\nhc.asH2OFrame(weightsDF, \"weights\")"
     },
     {
       "type": "cs",
