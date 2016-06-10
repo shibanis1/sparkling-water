@@ -40,7 +40,6 @@ dependencies {
 }
 
 integTest {
-// Pass references to libraries to test launcher
   systemProperty "spark.ext.h2o.backend.cluster.mode", detectClusterMode()
   systemProperty "spark.testing",   "true"
   systemProperty "spark.test.home", "${sparkHome}"

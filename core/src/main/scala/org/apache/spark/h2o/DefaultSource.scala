@@ -70,7 +70,7 @@ class DefaultSource extends RelationProvider
                                parameters: Map[String, String],
                                data: DataFrame): BaseRelation = {
     val key = checkKey(parameters)
-    val originalFrame = DKV.getGet[H2OFrame](key)
+    val originalFrame = DKV.getGet[Frame](key)
     implicit val h2oContext = {
       if(H2OContext.get().isEmpty){
         throw new RuntimeException("H2OContext has to be started in order to save/load data using H2O Data source.")

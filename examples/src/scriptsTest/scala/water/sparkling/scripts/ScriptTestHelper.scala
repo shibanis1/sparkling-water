@@ -4,6 +4,7 @@ import java.io.File
 import java.net.InetAddress
 
 import org.apache.spark.h2o.backends.SharedH2OConf._
+import org.apache.spark.h2o.backends.external.ExternalBackendConf
 import org.apache.spark.h2o.utils.ExternalClusterModeTestUtils
 import org.apache.spark.repl.h2o.{CodeResults, H2OInterpreter}
 import org.apache.spark.{SparkConf, SparkContext}
@@ -19,16 +20,17 @@ trait ScriptsTestHelper extends FunSuite with org.apache.spark.Logging with Befo
   var sc: SparkContext = _
 
   override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    val cloudName = uniqueCloudName("integ-tests")
+    val cloudName = uniqueCloudName("scripts-tests")
     sparkConf.set(PROP_CLOUD_NAME._1, cloudName)
     sparkConf.set(PROP_CLIENT_IP._1, InetAddress.getLocalHost.getHostAddress)
+    val cloudSize = 2
+    sparkConf.set(ExternalBackendConf.PROP_EXTERNAL_H2O_NODES._1, cloudSize.toString)
     sc = new SparkContext(sparkConf)
     if(testsInExternalMode){
-      startCloud(2, cloudName, InetAddress.getLocalHost.getHostAddress)
+      startCloud(cloudSize, cloudName, InetAddress.getLocalHost.getHostAddress)
     }
+    super.beforeAll()
   }
-
 
   override protected def afterAll(): Unit = {
     if(testsInExternalMode){
@@ -72,7 +74,7 @@ trait ScriptsTestHelper extends FunSuite with org.apache.spark.Logging with Befo
 
     inspections.termsAndValues.foreach {
       termName =>
-        testResult.addTermValue(termName,loop.valueOfTerm(termName).get.toString)
+        testResult.addTermValue(termName, loop.valueOfTerm(termName).get.toString)
     }
 
     testResult

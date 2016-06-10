@@ -32,6 +32,13 @@ trait ExternalClusterModeTestUtils extends BeforeAndAfterEach {
 
   @transient var cloudProcesses: Seq[Process] = null
 
+  lazy val swJar = sys.props.getOrElse("sparkling.assembly.jar", if(sys.env.get("sparkling.assembly.jar").isDefined){
+    sys.env.get("sparkling.assembly.jar").get
+  } else{
+    fail("sparkling.assembly.jar environment variable is not set! It should point to the location of sparkling-water" +
+      " assembly JAR")
+  })
+
   lazy val h2oJar = sys.props.getOrElse("H2O_JAR", if (sys.env.get("H2O_JAR").isDefined) {
     sys.env.get("H2O_JAR").get
   } else {
@@ -41,7 +48,7 @@ trait ExternalClusterModeTestUtils extends BeforeAndAfterEach {
   def uniqueCloudName(customPart: String) = s"sparkling-water-$customPart-${Random.nextInt()}"
 
   private def launchSingle(cloudName: String, ip: String): Process = {
-    val cmdToLaunch = Seq[String]("java", "-jar", h2oJar, "-md5skip", "-name", cloudName, "-ip", ip)
+    val cmdToLaunch = Seq[String]("java", "-cp", Seq(swJar, h2oJar).mkString(":"), "water.H2OApp", "-md5skip", "-name", cloudName, "-ip", ip)
     import scala.sys.process._
     Process(cmdToLaunch).run()
   }

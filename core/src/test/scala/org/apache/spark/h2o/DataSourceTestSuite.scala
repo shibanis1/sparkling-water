@@ -69,7 +69,7 @@ class DataSourceTestSuite extends FunSuite with SharedSparkTestContext {
     val df = sqlc.createDataFrame(rdd)
     df.write.h2o("new_key")
 
-    val h2oFrame = DKV.getGet[H2OFrame]("new_key")
+    val h2oFrame = DKV.getGet[Frame]("new_key")
     assert (df.columns.length == h2oFrame.numCols(), "Number of columns should match")
     assert (df.columns.sameElements(h2oFrame.names()),"Column names should match")
     assert (df.count() == h2oFrame.numRows(), "Number of rows should match")
@@ -85,7 +85,7 @@ class DataSourceTestSuite extends FunSuite with SharedSparkTestContext {
     val rddNew = sc.parallelize(1 to 1000).map( v => StringHolder(Some(v.toString)))
     val dfNew = sqlc.createDataFrame(rddNew)
 
-    val h2oFrame = DKV.getGet[H2OFrame]("new_key")
+    val h2oFrame = DKV.getGet[Frame]("new_key")
     val thrown = intercept[RuntimeException] {
       dfNew.write.format("h2o").mode(SaveMode.ErrorIfExists).save("new_key")
     }
@@ -104,7 +104,7 @@ class DataSourceTestSuite extends FunSuite with SharedSparkTestContext {
 
     dfNew.write.format("h2o").mode(SaveMode.Overwrite).save("new_key")
     // load new H2O Frame
-    val h2oFrame = DKV.getGet[H2OFrame]("new_key")
+    val h2oFrame = DKV.getGet[Frame]("new_key")
 
     assert (dfNew.columns.length == h2oFrame.numCols(), "Number of columns should match")
     assert (dfNew.columns.sameElements(h2oFrame.names()),"Column names should match")
@@ -122,7 +122,7 @@ class DataSourceTestSuite extends FunSuite with SharedSparkTestContext {
     dfNew.write.format("h2o").mode(SaveMode.Ignore).save("new_key")
 
     // load new H2O Frame
-    val h2oFrame = DKV.getGet[H2OFrame]("new_key")
+    val h2oFrame = DKV.getGet[Frame]("new_key")
 
     assert (df.columns.length == h2oFrame.numCols(), "Number of columns should match")
     assert (df.columns.sameElements(h2oFrame.names()),"Column names should match")

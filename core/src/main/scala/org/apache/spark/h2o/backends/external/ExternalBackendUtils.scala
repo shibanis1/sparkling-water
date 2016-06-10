@@ -31,21 +31,19 @@ import water.{AutoBufferUtils, AutoBuffer, H2O}
   */
 private[external] trait ExternalBackendUtils extends SharedBackendUtils{
 
-  private final val BB_BIG_SIZE = 64 * 1024
-
   /**
     * Get arguments for H2O client
     *
     * @return array of H2O client arguments.
     */
   override def getH2OClientArgs(conf: H2OConf): Array[String] = {
-    Array[String]("-md5skip")++getH2OClientConnectionArgs(conf)++super.getH2OClientArgs(conf)
+    Array("-md5skip")++getH2OClientConnectionArgs(conf)++super.getH2OClientArgs(conf)
   }
 
   def getConnection(nodeDesc: NodeDesc): SocketChannel = {
     val sock = SocketChannel.open()
     sock.socket().setReuseAddress(true)
-    sock.socket().setSendBufferSize(BB_BIG_SIZE)
+    sock.socket().setSendBufferSize(AutoBufferUtils.BBP_BIG_SIZE)
     val isa = new InetSocketAddress(nodeDesc.hostname, nodeDesc.port + 1) // +1 to connect to internal comm port
     val res = sock.connect(isa) // Can toss IOEx, esp if other node is still booting up
     assert(res)

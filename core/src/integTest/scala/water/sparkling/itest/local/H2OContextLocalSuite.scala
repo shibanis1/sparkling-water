@@ -17,7 +17,7 @@
 package water.sparkling.itest.local
 
 import org.apache.spark.SparkContext
-import org.apache.spark.h2o.H2OContext
+import org.apache.spark.h2o.{H2OConf, H2OContext}
 import org.apache.spark.h2o.utils.SparkTestContext
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -40,7 +40,7 @@ class H2OContextLocalSuite extends FunSuite
       startCloud(1, sc.getConf)
     }
 
-    hc = H2OContext.getOrCreate(sc)
+    hc = H2OContext.getOrCreate(sc, new H2OConf(sc).setNumOfExternalH2ONodes(1))
     // Number of nodes should be on
     assert(water.H2O.CLOUD.members().length == 1, "H2O cloud should have 1 members")
     // Make sure that H2O is running

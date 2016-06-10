@@ -43,7 +43,7 @@ class H2OContextLocalClusterSuite extends FunSuite
       startCloud(3, sc.getConf)
     }
 
-    hc = H2OContext.getOrCreate(sc)
+    hc = H2OContext.getOrCreate(sc, new H2OConf(sc).setNumOfExternalH2ONodes(3))
 
     assert(water.H2O.CLOUD.members().length == 3, "H2O cloud should have 3 members")
 

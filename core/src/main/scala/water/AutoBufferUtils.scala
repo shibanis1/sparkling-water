@@ -25,21 +25,19 @@ object AutoBufferUtils {
 
   def putUdp(udpType: UDP.udp, ab: AutoBuffer) = ab.putUdp(udpType)
 
-  def exactSizeByteBuffer(ab: AutoBuffer): ByteBuffer = {
-    val bb = ByteBuffer.allocate(ab.position()).order(ByteOrder.nativeOrder()).put(ab.buf(), 0, ab.position())
-    bb.flip()
-    bb
-  }
-
   def getInt(ab: AutoBuffer): Int = ab.getInt
   def getPort(ab: AutoBuffer): Int = ab.getPort
 
   def create(socketChannel: SocketChannel) = new AutoBuffer(socketChannel)
 
   def writeToChannel(ab: AutoBuffer, channel: SocketChannel): Unit = {
-    val bb = AutoBufferUtils.exactSizeByteBuffer(ab)
-    while (bb.hasRemaining) {
-      channel.write(bb)
+    ab.flipForReading()
+    while (ab._bb.hasRemaining){
+      channel.write(ab._bb)
     }
   }
+
+  def clearForWriting(ab: AutoBuffer): Unit = ab.clearForWriting(H2O.MAX_PRIORITY)
+
+  val BBP_BIG_SIZE = AutoBuffer.BBP_BIG._size
 }

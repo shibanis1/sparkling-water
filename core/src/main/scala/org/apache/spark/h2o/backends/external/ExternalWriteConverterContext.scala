@@ -27,34 +27,29 @@ class ExternalWriteConverterContext(val nodeDesc: NodeDesc) extends ExternalBack
 
   var socketChannel = getConnection(nodeDesc)
   var rowCounter: Long = 0
+  private val ab = new AutoBuffer().flipForReading() // using default constructor AutoBuffer is created with
+  // private property _read set to false, in order to satisfy call clearForWriting it has to be set to true
+  // which does the call of flipForReading method
 
   override def numOfRows(): Long = rowCounter
-
-  private def closeSocket(): Unit = {
-    socketChannel.close()
-  }
 
   /**
     * This method closes the communication after the chunks have been closed
     */
   override def closeChunks(): Unit = {
-
-    val ab = new AutoBuffer()
+    AutoBufferUtils.clearForWriting(ab)
     ab.putInt(ExternalFrameHandler.CLOSE_NEW_CHUNK)
     writeToChannel(ab, socketChannel)
 
     // close socket since this was last job we had to do on remote node
-    closeSocket()
+    socketChannel.close()
   }
 
   /**
-    * This method initiates the whole communication before the chunks are created
-    * @param keystr
-    * @param vecTypes
-    * @param chunkId
+    * Initialize the communication before the chunks are created
     */
   override def createChunks(keystr: String, vecTypes: Array[Byte], chunkId: Int): Unit = {
-    val ab = new AutoBuffer()
+    AutoBufferUtils.clearForWriting(ab)
     AutoBufferUtils.putUdp(UDP.udp.external_frame, ab)
     ab.putInt(ExternalFrameHandler.CREATE_FRAME)
     ab.putInt(ExternalFrameHandler.CREATE_NEW_CHUNK)
@@ -66,7 +61,7 @@ class ExternalWriteConverterContext(val nodeDesc: NodeDesc) extends ExternalBack
 
 
   override def put(columnNum: Int, n: Number) = {
-    val ab = new AutoBuffer()
+    AutoBufferUtils.clearForWriting(ab)
     ab.putInt(ExternalFrameHandler.ADD_TO_FRAME)
     ab.putInt(ExternalFrameHandler.TYPE_NUM)
     ab.putInt(columnNum)
@@ -76,7 +71,7 @@ class ExternalWriteConverterContext(val nodeDesc: NodeDesc) extends ExternalBack
 
 
   override def put(columnNum: Int, n: Boolean) = {
-    val ab = new AutoBuffer()
+    AutoBufferUtils.clearForWriting(ab)
     ab.putInt(ExternalFrameHandler.ADD_TO_FRAME)
     ab.putInt(ExternalFrameHandler.TYPE_NUM)
     ab.putInt(columnNum)
@@ -85,7 +80,7 @@ class ExternalWriteConverterContext(val nodeDesc: NodeDesc) extends ExternalBack
   }
 
   override def put(columnNum: Int, n: java.sql.Timestamp) = {
-    val ab = new AutoBuffer()
+    AutoBufferUtils.clearForWriting(ab)
     ab.putInt(ExternalFrameHandler.ADD_TO_FRAME)
     ab.putInt(ExternalFrameHandler.TYPE_NUM)
     ab.putInt(columnNum)
@@ -94,7 +89,7 @@ class ExternalWriteConverterContext(val nodeDesc: NodeDesc) extends ExternalBack
   }
 
   override def put(columnNum: Int, n: String) = {
-    val ab = new AutoBuffer()
+    AutoBufferUtils.clearForWriting(ab)
     ab.putInt(ExternalFrameHandler.ADD_TO_FRAME)
     ab.putInt(ExternalFrameHandler.TYPE_STR)
     ab.putInt(columnNum)
@@ -103,7 +98,7 @@ class ExternalWriteConverterContext(val nodeDesc: NodeDesc) extends ExternalBack
   }
 
   override def putNA(columnNum: Int) = {
-    val ab = new AutoBuffer()
+    AutoBufferUtils.clearForWriting(ab)
     ab.putInt(ExternalFrameHandler.ADD_TO_FRAME)
     ab.putInt(ExternalFrameHandler.TYPE_NA)
     ab.putInt(columnNum)
@@ -117,12 +112,11 @@ object ExternalWriteConverterContext extends ExternalBackendUtils{
 
   def scheduleUpload[T](rdd: RDD[T]): (RDD[T], Map[Int, NodeDesc]) = {
     val nodes = cloudMembers
-
-    val preparedRDD = if (rdd.getNumPartitions < nodes.length) {
-      rdd.repartition(nodes.length)
-    } else if (rdd.getNumPartitions > nodes.length) {
-      // coalesce is more effective in this case since we're decreasing num of partitions - no extra shuffle
-      rdd.coalesce(nodes.length, shuffle = false)
+    val shouldShuffle = rdd.getNumPartitions < nodes.length
+    val preparedRDD =  if (rdd.getNumPartitions != nodes.length) {
+      // coalesce is more effective in this case then repartitioning since when we're decreasing number of
+      // partitions, we do not need to shuffle data
+      rdd.coalesce(nodes.length, shouldShuffle)
     } else {
       rdd
     }

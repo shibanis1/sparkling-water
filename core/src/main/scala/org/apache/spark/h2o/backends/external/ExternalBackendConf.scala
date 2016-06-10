@@ -28,7 +28,7 @@ trait ExternalBackendConf extends SharedH2OConf {
 
   import ExternalBackendConf._
   def flatFilePath = sparkConf.getOption(PROP_FLAT_FILE_PATH._1)
-
+  def numOfExternalH2ONodes = sparkConf.getOption(PROP_EXTERNAL_H2O_NODES._1)
   /**
     * Sets path to flat file containing lines in a form. When H2O is started in external cluster mode it connects to
     * cluster using this flatfile and cloud name which can be set using setCloudName method on this configuration
@@ -42,6 +42,10 @@ trait ExternalBackendConf extends SharedH2OConf {
     self
   }
 
+  def setNumOfExternalH2ONodes(numOfExternalH2ONodes: Int): H2OConf = {
+    sparkConf.set(PROP_EXTERNAL_H2O_NODES._1, numOfExternalH2ONodes.toString)
+    self
+  }
 
   def externalConfString: String =
     s"""Sparkling Water configuration:
@@ -56,4 +60,7 @@ trait ExternalBackendConf extends SharedH2OConf {
 object ExternalBackendConf {
   /** Path to flat file representing the cluster to which connect */
   val PROP_FLAT_FILE_PATH = ("spark.ext.h2o.cloud.flatfile",null.asInstanceOf[String])
+
+  /** Number of nodes to wait for when connecting to external H2O cluster */
+  val PROP_EXTERNAL_H2O_NODES = ("spark.ext.h2o.external.cluster.num.h2o.nodes", null.asInstanceOf[String])
 }

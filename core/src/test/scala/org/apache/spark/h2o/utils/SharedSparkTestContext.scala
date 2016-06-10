@@ -41,7 +41,7 @@ trait SharedSparkTestContext extends SparkTestContext with ExternalClusterModeTe
     if(testsInExternalMode){
       startCloud(2, sc.getConf)
     }
-    hc = createH2OContext(sc, new H2OConf(sc))
+    hc = createH2OContext(sc, new H2OConf(sc).setNumOfExternalH2ONodes(2))
   }
 
   override def afterAll(){

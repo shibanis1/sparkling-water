@@ -4,6 +4,7 @@ import java.io.{PrintWriter, StringWriter}
 import java.net.InetAddress
 
 import org.apache.spark.h2o.backends.SharedH2OConf._
+import org.apache.spark.h2o.backends.external.ExternalBackendConf
 import org.apache.spark.h2o.utils.ExternalClusterModeTestUtils
 
 import org.scalatest.{BeforeAndAfterEach, Suite, Tag}
@@ -63,8 +64,10 @@ trait IntegTestHelper extends BeforeAndAfterEach with ExternalClusterModeTestUti
     val cloudName = uniqueCloudName("integ-tests")
     testEnv.sparkConf += PROP_CLOUD_NAME._1 -> cloudName
     testEnv.sparkConf += PROP_CLIENT_IP._1 -> InetAddress.getLocalHost.getHostAddress
+    val cloudSize = 2
+    testEnv.sparkConf += ExternalBackendConf.PROP_EXTERNAL_H2O_NODES._1 -> cloudSize.toString
     if(testsInExternalMode){
-      startCloud(2, cloudName, InetAddress.getLocalHost.getHostAddress)
+      startCloud(cloudSize, cloudName, InetAddress.getLocalHost.getHostAddress)
     }
   }
 
