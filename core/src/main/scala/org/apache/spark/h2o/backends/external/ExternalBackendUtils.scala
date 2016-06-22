@@ -42,7 +42,6 @@ private[external] trait ExternalBackendUtils extends SharedBackendUtils{
 
   def getConnection(nodeDesc: NodeDesc): SocketChannel = {
     val sock = SocketChannel.open()
-    sock.socket().setReuseAddress(true)
     sock.socket().setSendBufferSize(AutoBufferUtils.BBP_BIG_SIZE)
     val isa = new InetSocketAddress(nodeDesc.hostname, nodeDesc.port + 1) // +1 to connect to internal comm port
     val res = sock.connect(isa) // Can toss IOEx, esp if other node is still booting up
