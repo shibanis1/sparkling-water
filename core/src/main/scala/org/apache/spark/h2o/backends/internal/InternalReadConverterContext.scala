@@ -51,7 +51,8 @@ class InternalReadConverterContext(override val keyName: String, override val ch
       val uuid = new UUID(chks(columnNum).at16h(rowIdx), chks(columnNum).at16l(rowIdx))
       uuid.toString
     } else{
-      null
+      assert(assertion = false, "Should never be here")
+      null // to make the compiler happy
     }
   }
 

@@ -143,10 +143,19 @@ class H2OContext private (@transient val sparkContext: SparkContext, @transient 
   /** Create a new H2OFrame based on existing Frame */
   def asH2OFrame(fr: Frame): H2OFrame = new H2OFrame(fr)
 
-  /** Convert given H2O frame into a Product RDD type */
+  /** Convert given H2O frame into a Product RDD type
+    *
+    * Consider using asH2OFrame since asRDD has several limitations such as that asRDD can't be used in Spark REPL
+    * in case we are RDD[T] where T is class defined in REPL. This is because class T is created as inner class
+    * and we are not able to create instance of class T without outer scope - which is impossible to get.
+    * */
   def asRDD[A <: Product: TypeTag: ClassTag](fr : H2OFrame) : RDD[A] = toRDD[A, H2OFrame](this, fr)
 
   /** A generic convert of Frame into Product RDD type
+    *
+    * Consider using asH2OFrame since asRDD has several limitations such as that asRDD can't be used in Spark REPL
+    * in case we are RDD[T] where T is class defined in REPL. This is because class T is created as inner class
+    * and we are not able to create instance of class T without outer scope - which is impossible to get.
     *
     * This code: hc.asRDD[PUBDEV458Type](rdd) will need to be call as hc.asRDD[PUBDEV458Type].apply(rdd)
     */
