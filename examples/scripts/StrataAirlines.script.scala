@@ -41,7 +41,7 @@ val wrawdata = sc.textFile(SparkFiles.get("Chicago_Ohare_International_Airport.c
 val weatherTable = wrawdata.map(_.split(",")).map(row => WeatherParse(row)).filter(!_.isWrongRow())
 
 // Transfer data from H2O to Spark DataFrame
-val airlinesTable =  h2oContext.asDataFrame(airlinesData).map(row => AirlinesParse(row))
+val airlinesTable = h2oContext.asDataFrame(airlinesData).map(row => AirlinesParse(row))
 val flightsToORD = airlinesTable.filter(f => f.Dest==Some("ORD"))
 
 // Use Spark SQL to join flight and weather data in spark
