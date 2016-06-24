@@ -22,10 +22,13 @@ import org.apache.spark.h2o._
 import org.apache.spark.h2o.backends.external.{ExternalReadConverterContext, ExternalWriteConverterContext}
 import org.apache.spark.h2o.backends.internal.{InternalReadConverterContext, InternalWriteConverterContext}
 import org.apache.spark.h2o.utils.NodeDesc
-import water.{DKV, Key}
+import org.apache.spark.sql.types._
+import water.{ExternalFrameHandler, DKV, Key}
 
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
+
+import scala.reflect.runtime.universe._
 
 
 private[converters] trait ConverterUtils {
@@ -99,35 +102,60 @@ private[converters] trait ConverterUtils {
   }
 }
 
-object ConverterUtils{
-
-  def getWriteConverterContext(uploadPlan: Option[immutable.Map[Int, NodeDesc]], partitionId: Int): WriteConverterContext ={
-    val converterContext = if(uploadPlan.isDefined){
+object ConverterUtils {
+  def getWriteConverterContext(uploadPlan: Option[immutable.Map[Int, NodeDesc]], partitionId: Int): WriteConverterContext = {
+    val converterContext = if (uploadPlan.isDefined) {
       new ExternalWriteConverterContext(uploadPlan.get.get(partitionId).get)
-    }else{
+    } else {
       new InternalWriteConverterContext()
     }
     converterContext
   }
 
-  def getReadConverterContext(isExternalBackend: Boolean, keyName: String, chksLocation: Map[Int, NodeDesc], chunkIdx: Int): ReadConverterContext ={
-    val converterContext = if(isExternalBackend){
-      new ExternalReadConverterContext(keyName, chunkIdx, chksLocation(chunkIdx))
-    }else{
+  def getReadConverterContext(isExternalBackend: Boolean, keyName: String, chksLocation: Map[Int, NodeDesc], types: Array[Byte], chunkIdx: Int): ReadConverterContext = {
+    val converterContext = if (isExternalBackend) {
+      new ExternalReadConverterContext(keyName, chunkIdx, chksLocation(chunkIdx), types)
+    } else {
       new InternalReadConverterContext(keyName, chunkIdx)
     }
     converterContext
   }
 
-  def getIterator[T](isExternalBackend: Boolean, iterator: Iterator[T]): Iterator[T] ={
-    if(isExternalBackend){
+  def getIterator[T](isExternalBackend: Boolean, iterator: Iterator[T]): Iterator[T] = {
+    if (isExternalBackend) {
       val rows = new ListBuffer[T]()
-      while(iterator.hasNext){
+      while (iterator.hasNext) {
         rows += iterator.next()
       }
       rows.iterator
-    }else{
+    } else {
       iterator
     }
   }
+
+  def prepareExpectedTypes[T: TypeTag](types: Array[T]): Array[Byte] = typeOf[T] match {
+    case t if t =:= typeOf[DataType] =>
+      types.map {
+        case ByteType => ExternalFrameHandler.T_INTEGER
+        case ShortType => ExternalFrameHandler.T_INTEGER
+        case IntegerType => ExternalFrameHandler.T_INTEGER
+        case LongType => ExternalFrameHandler.T_INTEGER
+        case FloatType => ExternalFrameHandler.T_INTEGER
+        case DoubleType => ExternalFrameHandler.T_DOUBLE
+        case BooleanType => ExternalFrameHandler.T_INTEGER
+        case StringType => ExternalFrameHandler.T_STRING
+        case TimestampType => ExternalFrameHandler.T_INTEGER
+      }
+    case t if t =:= typeOf[Class[_]] =>
+      types.map {
+        case q if q == classOf[Integer] => ExternalFrameHandler.T_INTEGER
+        case q if q == classOf[java.lang.Long] => ExternalFrameHandler.T_INTEGER
+        case q if q == classOf[java.lang.Double] => ExternalFrameHandler.T_DOUBLE
+        case q if q == classOf[java.lang.Float] => ExternalFrameHandler.T_INTEGER
+        case q if q == classOf[java.lang.Boolean] => ExternalFrameHandler.T_INTEGER
+        case q if q == classOf[String] => ExternalFrameHandler.T_STRING
+      }
+  }
+
 }
+

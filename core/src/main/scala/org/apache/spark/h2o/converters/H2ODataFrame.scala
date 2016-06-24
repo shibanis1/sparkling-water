@@ -25,9 +25,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.GenericMutableRow
 import org.apache.spark.sql.types._
 import org.apache.spark.{Partition, TaskContext}
-import water.fvec.{FrameUtils, H2OFrame}
-
-import scala.collection.mutable.ListBuffer
+import water.fvec.FrameUtils
 
 /**
 * H2O H2OFrame wrapper providing RDD[Row]=DataFrame API.
@@ -50,13 +48,16 @@ class H2ODataFrame[T <: water.fvec.Frame](@transient val hc: H2OContext,
   // This is small computation done at the moment of
   // creation H2ODataFrame ( not lazy ), but it gives us benefit of not having to compute types in each partition
   val types = frame.vecs().map( v => vecTypeToDataType(v))
+
+  // Create new types list which describes expected types in a way H2O backend can use it( this list of format
+  // contain types in a format same for H2ODataframe and H2ORDD
+  val expectedTypes = ConverterUtils.prepareExpectedTypes(types)
+
   @DeveloperApi
   override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
-    val con = ConverterUtils.getReadConverterContext(isExternalBackend, keyName, chksLocation, split.index)
+    val con = ConverterUtils.getReadConverterContext(isExternalBackend, keyName, chksLocation, expectedTypes, split.index)
 
     val iterator  = new Iterator[InternalRow] {
-
-
 
       def hasNext: Boolean = con.hasNext
 

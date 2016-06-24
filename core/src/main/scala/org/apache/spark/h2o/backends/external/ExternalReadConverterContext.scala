@@ -25,12 +25,12 @@ import water.AutoBufferUtils._
   *
   * @param keyName key name of frame to query data from
   * @param chunkIdx chunk index
-  * @param node the h2o node which has data for chunk with the chunkIdx
+  * @param nodeDesc the h2o node which has data for chunk with the chunkIdx
   */
 class ExternalReadConverterContext(override val keyName: String, override val chunkIdx: Int,
-                                    val node: NodeDesc) extends ExternalBackendUtils with ReadConverterContext {
+                                    val nodeDesc: NodeDesc, types: Array[Byte]) extends ExternalBackendUtils with ReadConverterContext {
 
-  private val socketChannel = ExternalBackendUtils.getConnection(node)
+  private val socketChannel = ExternalBackendUtils.getConnection(nodeDesc)
   private val inputAb = createInputAutoBuffer()
   private val numOfRows: Int =  AutoBufferUtils.getInt(inputAb)
   private def createInputAutoBuffer(): AutoBuffer = {
@@ -38,10 +38,11 @@ class ExternalReadConverterContext(override val keyName: String, override val ch
     AutoBufferUtils.putUdp(UDP.udp.external_frame, ab)
     ab.putInt(ExternalFrameHandler.DOWNLOAD_FRAME)
     ab.putStr(keyName)
+    ab.putA1(types)
     ab.putInt(chunkIdx)
     writeToChannel(ab, socketChannel)
     val inAb = AutoBufferUtils.create(socketChannel)
-    AutoBufferUtils.getPort(inAb) // skip 2 bytes for port set by ab.putUdp
+    AutoBufferUtils.getPort(inAb) // skip 3 bytes - 1 for type and 2 for port set by ab.putUdp
     inAb
   }
 
